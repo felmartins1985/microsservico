@@ -1,0 +1,73 @@
+version: "3"
+services:
+  auth-db:
+    image: postgres:11
+    container_name: auth-db
+    restart: always
+    environment:
+      POSTGRES_DB: auth-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  product-db:
+    image: postgres:11
+    container_name: product-db
+    restart: always
+    environment:
+      POSTGRES_DB: product-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  sales-db:
+    image: mongo
+    container_name: sales-db
+    restart: always
+    environment:
+      MONGODB_USER: admin
+      MONGODB_DATABASE: sales
+      MONGODB_PASS: 123456
+  
+  auth-api:
+    build: './auth-api'
+    container_name: auth-api
+    environment:
+      - PORT=8080
+      - DB_HOST=auth-db
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASSWORD=123456
+    ports:
+      - 8080:8080
+    depends_on:
+      auth-db:
+        condition: service_healthy
+  product-api:
+    build: './product-api'
+    container_name: product-api
+    ports:
+      - 8081:8081
+    depends_on:
+      product-db:
+        condition: service_healthy
+  sales-api:
+    build: './sales-api'
+    container_name: sales-api
+    environment:
+      - PORT=8082
+    ports:
+      - 8082:8082
+  sales_rabbit:
+    image: rabbitmq:3-management
+    container_name: sales_rabbit
+    ports:
+      - 5672:5672
+      - 25676:25676
+      - 15672:15672
